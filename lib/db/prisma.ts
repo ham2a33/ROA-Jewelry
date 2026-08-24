@@ -35,5 +35,6 @@ export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
 });
 
 if (process.env.NODE_ENV !== "production") {
+  // Dev-only warm-up; never run during `next build` (NODE_ENV=production).
   globalForPrisma.prisma = getPrismaClient();
 }

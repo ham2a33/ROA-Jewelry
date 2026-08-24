@@ -14,6 +14,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS=--max-old-space-size=2048
 ARG NEXT_PUBLIC_SITE_URL=https://roa-jewerly.com
 ARG AUTH_SECRET=build-time-placeholder-minimum-32-characters-long
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
