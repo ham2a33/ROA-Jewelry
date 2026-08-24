@@ -5,18 +5,14 @@ services:
     image: postgres:16-alpine
     container_name: roa-jewelry-postgres
     restart: unless-stopped
-
     ports:
       - "5432:5432"
-
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: roa_jewelry
-
     volumes:
       - roa_jewelry_postgres_data:/var/lib/postgresql/data
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d roa_jewelry"]
       interval: 5s
@@ -29,28 +25,24 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        DATABASE_URL: postgresql://postgres:postgres@postgres:5432/roa_jewelry?schema=public
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
-        AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production}
-
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://roa-jewerly.com}
+        AUTH_SECRET: ${AUTH_SECRET:-build-time-placeholder-minimum-32-characters-long}
     container_name: roa-jewelry-app
     restart: unless-stopped
-
-    expose:
-     - "3000"
-
+    ports:
+      - "${APP_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/roa_jewelry?schema=public
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
-      AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://roa-jewerly.com}
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production-use-32-chars-min}
       MEDIA_STORAGE_PROVIDER: ${MEDIA_STORAGE_PROVIDER:-local}
       MEDIA_UPLOAD_DIR: ${MEDIA_UPLOAD_DIR:-./public/uploads}
       MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-}
-
     volumes:
       - roa_jewelry_uploads:/app/public/uploads
-
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,6 +50,5 @@ services:
 volumes:
   roa_jewelry_postgres_data:
     name: roa_jewelry_postgres_data
-
   roa_jewelry_uploads:
     name: roa_jewelry_uploads
