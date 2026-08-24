@@ -1,12 +1,10 @@
 name: roa-jewelry
 
-# Dokploy + Traefik: do NOT publish host ports 80/443/3000 — host 3000 is Dokploy's own UI.
-# Traefik's docker provider only reads container IPs from `dokploy-network`, so `app` must be
-# attached to it or Traefik discards the router and answers "404 page not found".
+# Dokploy + Traefik: do NOT bind host ports 80/443/3000.
+# App must join dokploy-network — Traefik's docker provider only resolves backends there.
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: roa-jewelry-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -28,10 +26,9 @@ services:
       args:
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://roa-jewerly.com}
         AUTH_SECRET: ${AUTH_SECRET:-build-time-placeholder-minimum-32-characters-long}
-    container_name: roa-jewelry-app
     restart: unless-stopped
-    expose:
-      - "3000"
+    ports:
+      - 3000
     networks:
       - default
       - dokploy-network
@@ -40,13 +37,14 @@ services:
       - traefik.docker.network=dokploy-network
       - traefik.http.routers.roa-jewelry-web.rule=Host(`roa-jewerly.com`) || Host(`www.roa-jewerly.com`)
       - traefik.http.routers.roa-jewelry-web.entrypoints=web
+      - traefik.http.routers.roa-jewelry-web.middlewares=redirect-to-https@file
       - traefik.http.routers.roa-jewelry-web.service=roa-jewelry-web
       - traefik.http.services.roa-jewelry-web.loadbalancer.server.port=3000
       - traefik.http.routers.roa-jewelry-websecure.rule=Host(`roa-jewerly.com`) || Host(`www.roa-jewerly.com`)
       - traefik.http.routers.roa-jewelry-websecure.entrypoints=websecure
-      - traefik.http.routers.roa-jewelry-websecure.service=roa-jewelry-websecure
       - traefik.http.routers.roa-jewelry-websecure.tls=true
-      - traefik.http.routers.roa-jewelry-websecure.tls.certresolver=letsencrypt
+      - traefik.http.routers.roa-jewelry-websecure.tls.certResolver=letsencrypt
+      - traefik.http.routers.roa-jewelry-websecure.service=roa-jewelry-websecure
       - traefik.http.services.roa-jewelry-websecure.loadbalancer.server.port=3000
     environment:
       NODE_ENV: production
