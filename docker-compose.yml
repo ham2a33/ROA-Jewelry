@@ -1,12 +1,12 @@
 name: roa-jewelry
 
+# Dokploy + Traefik: do NOT publish host ports 80/443/3000 — Traefik routes to
+# container port 3000 on the internal Docker network. Set domain + port 3000 in Dokploy UI.
 services:
   postgres:
     image: postgres:16-alpine
     container_name: roa-jewelry-postgres
     restart: unless-stopped
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -29,8 +29,8 @@ services:
         AUTH_SECRET: ${AUTH_SECRET:-build-time-placeholder-minimum-32-characters-long}
     container_name: roa-jewelry-app
     restart: unless-stopped
-    ports:
-      - "${APP_PORT:-3000}:3000"
+    expose:
+      - "3000"
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
