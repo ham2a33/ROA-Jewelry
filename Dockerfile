@@ -20,6 +20,9 @@ ARG AUTH_SECRET=build-time-placeholder-minimum-32-characters-long
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV AUTH_SECRET=$AUTH_SECRET
 
+# Prisma client is generated during `npm ci` in deps, but `/generated` is gitignored
+# and not in the Docker build context — regenerate before webpack build.
+RUN npx prisma generate
 RUN npm run build
 
 FROM base AS runner
