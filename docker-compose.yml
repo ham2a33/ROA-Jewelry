@@ -1,18 +1,45 @@
 name: roa-jewelry
 
 services:
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/roa_jewelry?schema=public"
+      NEXT_PUBLIC_SITE_URL: "https://ТВОЙ-ДОМЕН.kz"
+      MEDIA_STORAGE_PROVIDER: "local"
+      MEDIA_UPLOAD_DIR: "./public/uploads"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:16-alpine
+
     container_name: roa-jewelry-postgres
+
     restart: unless-stopped
+
     ports:
       - "5432:5432"
+
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: roa_jewelry
+
     volumes:
       - roa_jewelry_postgres_data:/var/lib/postgresql/data
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d roa_jewelry"]
       interval: 5s
