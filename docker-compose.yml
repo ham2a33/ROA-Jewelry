@@ -1,11 +1,13 @@
 name: roa-jewelry
 
-# Traefik -> proxy (dokploy-network) -> roa-jewelry-backend:3000 (compose network only).
-# Never proxy to generic "app" on dokploy-network — that hit AGMERZ.
+# Traefik -> proxy (dokploy-network) -> app:3000 (roa-internal only).
+# app and proxy MUST share roa-internal so nginx resolves "app" to this stack only.
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    networks:
+      - roa-internal
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -30,9 +32,7 @@ services:
     expose:
       - "3000"
     networks:
-      default:
-        aliases:
-          - roa-jewelry-backend
+      - roa-internal
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
@@ -55,7 +55,7 @@ services:
     expose:
       - "80"
     networks:
-      - default
+      - roa-internal
       - dokploy-network
     volumes:
       - ./docker/nginx-proxy.conf:/etc/nginx/conf.d/default.conf:ro
@@ -79,7 +79,7 @@ services:
       - app
 
 networks:
-  default:
+  roa-internal:
   dokploy-network:
     external: true
 
