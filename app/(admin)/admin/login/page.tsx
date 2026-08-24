@@ -1,10 +1,8 @@
-import { prisma } from "@/lib/db";
-import { connection } from "next/server";
 import { AdminLoginForm } from "@/components/admin/auth/AdminLoginForm";
+import { getAdminLoginBootstrapState } from "@/server/queries/admin/auth-page";
 
 export default async function AdminLoginPage() {
-  await connection();
-  const userCount = await prisma.user.count().catch(() => 0);
+  const { showBootstrap } = await getAdminLoginBootstrapState();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-100 px-4">
@@ -14,10 +12,10 @@ export default async function AdminLoginPage() {
             ROA Admin
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-neutral-900">
-            {userCount === 0 ? "Первоначальная настройка" : "Вход в админку"}
+            {showBootstrap ? "Первоначальная настройка" : "Вход в админку"}
           </h1>
         </div>
-        <AdminLoginForm showBootstrap={userCount === 0} />
+        <AdminLoginForm showBootstrap={showBootstrap} />
       </div>
     </div>
   );

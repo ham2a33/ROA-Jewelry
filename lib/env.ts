@@ -26,6 +26,8 @@ const envSchema = z.object({
 export type Env = z.infer<typeof envSchema>;
 export type StorageProviderName = z.infer<typeof storageProviderSchema>;
 
+let cachedEnv: Env | undefined;
+
 function readEnv(): Env {
   const parsed = envSchema.safeParse(process.env);
 
@@ -39,4 +41,21 @@ function readEnv(): Env {
   return parsed.data;
 }
 
-export const env = readEnv();
+/** Validates and returns env at runtime — safe to import during `next build`. */
+export function getEnv(): Env {
+  if (!cachedEnv) {
+    cachedEnv = readEnv();
+  }
+
+  return cachedEnv;
+}
+
+export const env: Env = new Proxy({} as Env, {
+  get(_target, prop: string | symbol) {
+    if (typeof prop !== "string") {
+      return undefined;
+    }
+
+    return getEnv()[prop as keyof Env];
+  },
+});
