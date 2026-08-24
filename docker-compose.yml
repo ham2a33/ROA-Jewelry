@@ -1,7 +1,8 @@
 name: roa-jewelry
 
-# Dokploy + Traefik: do NOT publish host ports 80/443/3000 — Traefik routes to
-# container port 3000 on the internal Docker network. Set domain + port 3000 in Dokploy UI.
+# Dokploy + Traefik: do NOT publish host ports 80/443/3000 — host 3000 is Dokploy's own UI.
+# Traefik's docker provider only reads container IPs from `dokploy-network`, so `app` must be
+# attached to it or Traefik discards the router and answers "404 page not found".
 services:
   postgres:
     image: postgres:16-alpine
@@ -31,6 +32,22 @@ services:
     restart: unless-stopped
     expose:
       - "3000"
+    networks:
+      - default
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.roa-jewelry-web.rule=Host(`roa-jewerly.com`) || Host(`www.roa-jewerly.com`)
+      - traefik.http.routers.roa-jewelry-web.entrypoints=web
+      - traefik.http.routers.roa-jewelry-web.service=roa-jewelry-web
+      - traefik.http.services.roa-jewelry-web.loadbalancer.server.port=3000
+      - traefik.http.routers.roa-jewelry-websecure.rule=Host(`roa-jewerly.com`) || Host(`www.roa-jewerly.com`)
+      - traefik.http.routers.roa-jewelry-websecure.entrypoints=websecure
+      - traefik.http.routers.roa-jewelry-websecure.service=roa-jewelry-websecure
+      - traefik.http.routers.roa-jewelry-websecure.tls=true
+      - traefik.http.routers.roa-jewelry-websecure.tls.certresolver=letsencrypt
+      - traefik.http.services.roa-jewelry-websecure.loadbalancer.server.port=3000
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
@@ -46,6 +63,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+networks:
+  default:
+  dokploy-network:
+    external: true
 
 volumes:
   roa_jewelry_postgres_data:
