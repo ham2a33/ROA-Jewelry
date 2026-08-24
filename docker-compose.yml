@@ -4,10 +4,18 @@ name: roa-jewelry
 # this `name:` field. Network and volumes use fixed external names so redeploys reuse
 # the same resources regardless of project slug.
 #
-# Traefik -> proxy (dokploy-network) -> roa-jewelry-backend:3000 (roa-internal only).
-# Never proxy to generic "app" on dokploy-network — that resolves to AGMERZ.
+# Production routing:
+#   Internet -> Traefik (dokploy-network) -> roa-app:3000 -> roa-postgres:5432
+#
+# First deploy on a fresh host:
+#   docker network create roa-jewelry-internal
+#   docker network create dokploy-network   # usually already exists on Dokploy VPS
+#   docker volume create roa_jewelry_postgres_data
+#   docker volume create roa_jewelry_uploads
+#
+# Local dev uses docker-compose.local.yml (ports 5432/3000, non-external networks).
 services:
-  postgres:
+  roa-postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     networks:
@@ -25,7 +33,7 @@ services:
       retries: 10
       start_period: 15s
 
-  app:
+  roa-app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -36,9 +44,8 @@ services:
     expose:
       - "3000"
     networks:
-      roa-internal:
-        aliases:
-          - roa-jewelry-backend
+      - roa-internal
+      - dokploy-network
     healthcheck:
       test:
         [
@@ -55,7 +62,7 @@ services:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: 3000
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/roa_jewelry?schema=public
+      DATABASE_URL: postgresql://postgres:postgres@roa-postgres:5432/roa_jewelry?schema=public
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://roa-jewerly.com}
       AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production-use-32-chars-min}
       MEDIA_STORAGE_PROVIDER: ${MEDIA_STORAGE_PROVIDER:-local}
@@ -64,38 +71,24 @@ services:
     volumes:
       - roa_jewelry_uploads:/app/public/uploads
     depends_on:
-      postgres:
+      roa-postgres:
         condition: service_healthy
-
-  proxy:
-    image: nginx:1.27-alpine
-    restart: unless-stopped
-    expose:
-      - "80"
-    networks:
-      - roa-internal
-      - dokploy-network
-    volumes:
-      - ./docker/nginx-proxy.conf:/etc/nginx/conf.d/default.conf:ro
     labels:
       - traefik.enable=true
       - traefik.docker.network=dokploy-network
-      - traefik.http.routers.roa-jewelry-roa-web.rule=Host(`roa-jewerly.com`) || Host(`www.roa-jewerly.com`)
-      - traefik.http.routers.roa-jewelry-roa-web.entrypoints=web
-      - traefik.http.routers.roa-jewelry-roa-web.middlewares=redirect-to-https@file
-      - traefik.http.routers.roa-jewelry-roa-web.service=roa-jewelry-roa-web
-      - traefik.http.routers.roa-jewelry-roa-web.priority=1000
-      - traefik.http.services.roa-jewelry-roa-web.loadbalancer.server.port=80
-      - traefik.http.routers.roa-jewelry-roa-websecure.rule=Host(`roa-jewerly.com`) || Host(`www.roa-jewerly.com`)
-      - traefik.http.routers.roa-jewelry-roa-websecure.entrypoints=websecure
-      - traefik.http.routers.roa-jewelry-roa-websecure.tls=true
-      - traefik.http.routers.roa-jewelry-roa-websecure.tls.certResolver=letsencrypt
-      - traefik.http.routers.roa-jewelry-roa-websecure.service=roa-jewelry-roa-websecure
-      - traefik.http.routers.roa-jewelry-roa-websecure.priority=1000
-      - traefik.http.services.roa-jewelry-roa-websecure.loadbalancer.server.port=80
-    depends_on:
-      app:
-        condition: service_healthy
+      - traefik.http.routers.roa-jewelry-web.rule=Host(`roa-jewerly.com`) || Host(`www.roa-jewerly.com`)
+      - traefik.http.routers.roa-jewelry-web.entrypoints=web
+      - traefik.http.routers.roa-jewelry-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.roa-jewelry-web.service=roa-jewelry-web
+      - traefik.http.routers.roa-jewelry-web.priority=1000
+      - traefik.http.services.roa-jewelry-web.loadbalancer.server.port=3000
+      - traefik.http.routers.roa-jewelry-websecure.rule=Host(`roa-jewerly.com`) || Host(`www.roa-jewerly.com`)
+      - traefik.http.routers.roa-jewelry-websecure.entrypoints=websecure
+      - traefik.http.routers.roa-jewelry-websecure.tls=true
+      - traefik.http.routers.roa-jewelry-websecure.tls.certResolver=letsencrypt
+      - traefik.http.routers.roa-jewelry-websecure.service=roa-jewelry-websecure
+      - traefik.http.routers.roa-jewelry-websecure.priority=1000
+      - traefik.http.services.roa-jewelry-websecure.loadbalancer.server.port=3000
 
 networks:
   roa-internal:

@@ -1,0 +1,22 @@
+# Local development overlay — NOT used by Dokploy production deploy.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+services:
+  roa-postgres:
+    ports:
+      - "5432:5432"
+
+  roa-app:
+    ports:
+      - "3000:3000"
+
+networks:
+  roa-internal:
+    external: false
+  dokploy-network:
+    external: false
+
+volumes:
+  roa_jewelry_postgres_data:
+    external: false
+  roa_jewelry_uploads:
+    external: false

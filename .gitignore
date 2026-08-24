@@ -31,6 +31,10 @@
 .DS_Store
 *.pem
 
+# accidental npm/CLI artifacts
+/next
+/roa-jewelry@*
+
 # debug
 npm-debug.log*
 yarn-debug.log*

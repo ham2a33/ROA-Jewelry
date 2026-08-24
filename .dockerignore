@@ -9,6 +9,7 @@ node_modules
 .cursor
 terminals
 Dockerfile
+docker-compose.local.yml
 docker-compose*.yml
 coverage
 .turbo
