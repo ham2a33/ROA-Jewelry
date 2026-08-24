@@ -1,5 +1,9 @@
 name: roa-jewelry
 
+# Dokploy sets COMPOSE_PROJECT_NAME per app (e.g. jewelty-roa-udrjcv), which overrides
+# this `name:` field. Network and volumes use fixed external names so redeploys reuse
+# the same resources regardless of project slug.
+#
 # Traefik -> proxy (dokploy-network) -> roa-jewelry-backend:3000 (roa-internal only).
 # Never proxy to generic "app" on dokploy-network — that resolves to AGMERZ.
 services:
@@ -19,7 +23,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 10s
+      start_period: 15s
 
   app:
     build:
@@ -41,12 +45,12 @@ services:
           "CMD",
           "node",
           "-e",
-          "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+          "require('net').createConnection({ port: 3000, host: '127.0.0.1' }).on('connect', () => process.exit(0)).on('error', () => process.exit(1))",
         ]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 180s
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
@@ -68,8 +72,6 @@ services:
     restart: unless-stopped
     expose:
       - "80"
-    links:
-      - app:roa-jewelry-backend
     networks:
       - roa-internal
       - dokploy-network
@@ -98,11 +100,14 @@ services:
 networks:
   roa-internal:
     name: roa-jewelry-internal
+    external: true
   dokploy-network:
     external: true
 
 volumes:
   roa_jewelry_postgres_data:
     name: roa_jewelry_postgres_data
+    external: true
   roa_jewelry_uploads:
     name: roa_jewelry_uploads
+    external: true
