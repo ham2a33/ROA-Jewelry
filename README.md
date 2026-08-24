@@ -1,34 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ROA Jewelry
 
-## Getting Started
+Premium e-commerce storefront and admin for ROA Jewelry.
 
-First, run the development server:
+This repository is being built step by step. The current baseline is project architecture only: Next.js App Router, Prisma/PostgreSQL, CMS media, catalog entities, and homepage section data — without storefront or admin UI.
+
+## Local database (Docker)
+
+ROA Jewelry uses PostgreSQL 16 via Docker Compose. Other project containers are not used.
+
+1. Copy `.env.example` to `.env` (keep `DATABASE_URL` as shown if using the compose service).
+2. Start PostgreSQL:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run db:up
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Apply migrations and seed:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx prisma migrate deploy
+npm run db:seed
+```
 
-## Learn More
+4. Stop PostgreSQL when finished:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run db:down
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The compose service uses container `roa-jewelry-postgres` and volume `roa_jewelry_postgres_data` on port `5432`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
+- `npm run dev` — development server
+- `npm run build` — production build
+- `npm run lint` — ESLint
+- `npm run typecheck` — TypeScript
+- `npm run db:up` — start local PostgreSQL (Docker)
+- `npm run db:down` — stop local PostgreSQL (Docker)
+- `npm run db:generate` — generate Prisma Client
+- `npm run db:migrate` — create/apply migrations (dev)
+- `npm run db:migrate:deploy` — apply migrations (CI/production)
+- `npm run db:seed` — seed homepage, catalog, and CMS baseline data
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Copy `.env.example` to `.env` and run `npm run db:up` before migrations.
