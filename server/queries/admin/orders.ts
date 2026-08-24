@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { DEFAULT_ADMIN_PAGE_SIZE } from "@/lib/admin/constants";
 import type { OrderStatus, Prisma } from "@/generated/prisma/client";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 export type AdminOrdersQuery = {
   page?: number;
@@ -78,6 +79,7 @@ function buildWhere(query: AdminOrdersQuery): Prisma.OrderWhereInput {
 export async function getAdminOrders(
   query: AdminOrdersQuery,
 ): Promise<AdminOrdersResult> {
+  await requireRuntimeAccess();
   const page = Math.max(1, query.page ?? 1);
   const limit = query.limit ?? DEFAULT_ADMIN_PAGE_SIZE;
   const where = buildWhere(query);
@@ -155,6 +157,7 @@ export type AdminOrderDetail = {
 export async function getAdminOrderById(
   id: string,
 ): Promise<AdminOrderDetail | null> {
+  await requireRuntimeAccess();
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
@@ -217,6 +220,7 @@ export async function getAdminOrderById(
 export async function getAdminOrderByNumber(
   orderNumber: string,
 ): Promise<AdminOrderDetail | null> {
+  await requireRuntimeAccess();
   const order = await prisma.order.findUnique({
     where: { orderNumber },
     select: { id: true },

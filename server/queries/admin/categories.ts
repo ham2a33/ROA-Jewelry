@@ -2,12 +2,14 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { DEFAULT_ADMIN_PAGE_SIZE } from "@/lib/admin/constants";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 export async function getAdminCategories(query?: {
   page?: number;
   limit?: number;
   search?: string;
 }) {
+  await requireRuntimeAccess();
   const page = Math.max(1, query?.page ?? 1);
   const limit = query?.limit ?? DEFAULT_ADMIN_PAGE_SIZE;
   const where = query?.search?.trim()
@@ -45,6 +47,7 @@ export async function getAdminCategories(query?: {
 }
 
 export async function getAdminCategoryById(id: string) {
+  await requireRuntimeAccess();
   return prisma.category.findUnique({
     where: { id },
     include: {

@@ -2,6 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { DEFAULT_ADMIN_PAGE_SIZE } from "@/lib/admin/constants";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 export type AdminCustomerListItem = {
   id: string;
@@ -18,6 +19,7 @@ export async function getAdminCustomers(query?: {
   limit?: number;
   search?: string;
 }) {
+  await requireRuntimeAccess();
   const page = Math.max(1, query?.page ?? 1);
   const limit = query?.limit ?? DEFAULT_ADMIN_PAGE_SIZE;
   const search = query?.search?.trim();
@@ -113,6 +115,7 @@ export async function getAdminCustomers(query?: {
 }
 
 export async function getAdminCustomerByPhone(encodedPhone: string) {
+  await requireRuntimeAccess();
   const phone = decodeURIComponent(encodedPhone);
   const orders = await prisma.order.findMany({
     where: { phone },

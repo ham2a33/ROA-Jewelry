@@ -7,6 +7,7 @@ import {
   type ProductCardRecord,
 } from "@/server/queries/product-mappers";
 import type { ProductCardData } from "@/types/product";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 export type FavoriteProductData = ProductCardData & {
   isActive: boolean;
@@ -15,6 +16,7 @@ export type FavoriteProductData = ProductCardData & {
 export async function getFavoriteProducts(
   productIds: string[],
 ): Promise<FavoriteProductData[]> {
+  await requireRuntimeAccess();
   if (productIds.length === 0) {
     return [];
   }

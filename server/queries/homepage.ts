@@ -18,6 +18,7 @@ import type { FinalCtaSectionData } from "@/types/final-cta";
 import type { HeroSectionData } from "@/types/hero";
 import type { NewArrivalsSectionData } from "@/types/new-arrivals";
 import type { ProductCardData } from "@/types/product";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 const DEFAULT_HOMEPAGE_PRODUCT_LIMIT = 4;
 
@@ -92,10 +93,12 @@ async function getBestsellerFallbackProducts(): Promise<ProductCardData[]> {
 }
 
 export async function getHeroSection(): Promise<HeroSectionData | null> {
+  await requireRuntimeAccess();
   return getHomepagePromoBannerSection();
 }
 
 export async function getBestsellersSection(): Promise<BestsellersSectionData | null> {
+  await requireRuntimeAccess();
   try {
     const section = await prisma.homepageSection.findFirst({
       where: {
@@ -148,6 +151,7 @@ export async function getBestsellersSection(): Promise<BestsellersSectionData | 
 }
 
 export async function getNewArrivalsSection(): Promise<NewArrivalsSectionData | null> {
+  await requireRuntimeAccess();
   try {
     const section = await prisma.homepageSection.findFirst({
       where: {
@@ -204,6 +208,7 @@ export async function getNewArrivalsSection(): Promise<NewArrivalsSectionData | 
 }
 
 export async function getBenefitsSection(): Promise<BenefitsSectionData | null> {
+  await requireRuntimeAccess();
   try {
     const section = await prisma.homepageSection.findFirst({
       where: {
@@ -231,6 +236,7 @@ export async function getBenefitsSection(): Promise<BenefitsSectionData | null> 
 }
 
 export async function getAboutSection(): Promise<AboutSectionData | null> {
+  await requireRuntimeAccess();
   try {
     const section = await prisma.homepageSection.findFirst({
       where: {
@@ -253,6 +259,7 @@ export async function getAboutSection(): Promise<AboutSectionData | null> {
 }
 
 export async function getFinalCtaSection(): Promise<FinalCtaSectionData | null> {
+  await requireRuntimeAccess();
   try {
     const section = await prisma.homepageSection.findFirst({
       where: {

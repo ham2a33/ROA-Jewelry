@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/db";
+import { connection } from "next/server";
 import { AdminLoginForm } from "@/components/admin/auth/AdminLoginForm";
 
 export default async function AdminLoginPage() {
+  await connection();
   const userCount = await prisma.user.count().catch(() => 0);
 
   return (

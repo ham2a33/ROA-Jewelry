@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { mapProductPage } from "@/server/queries/product-page-mappers";
 import type { ProductPageData } from "@/types/product-page";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 const mediaSelect = {
   id: true,
@@ -74,6 +75,7 @@ export const productPageSelect = {
 export async function getProductBySlug(
   slug: string,
 ): Promise<ProductPageData | null> {
+  await requireRuntimeAccess();
   try {
     const product = await prisma.product.findUnique({
       where: { slug },

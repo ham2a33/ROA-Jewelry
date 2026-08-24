@@ -2,12 +2,14 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { DEFAULT_ADMIN_PAGE_SIZE } from "@/lib/admin/constants";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 export async function getAdminReviews(query?: {
   page?: number;
   limit?: number;
   status?: "published" | "hidden" | "all";
 }) {
+  await requireRuntimeAccess();
   const page = Math.max(1, query?.page ?? 1);
   const limit = query?.limit ?? DEFAULT_ADMIN_PAGE_SIZE;
 
@@ -47,6 +49,7 @@ export async function getAdminReviews(query?: {
 }
 
 export async function getAdminReviewById(id: string) {
+  await requireRuntimeAccess();
   return prisma.review.findUnique({
     where: { id },
     include: {

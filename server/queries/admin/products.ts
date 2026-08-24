@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { DEFAULT_ADMIN_PAGE_SIZE } from "@/lib/admin/constants";
 import type { Prisma } from "@/generated/prisma/client";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 export type AdminProductsQuery = {
   page?: number;
@@ -31,6 +32,7 @@ export type AdminProductListItem = {
 };
 
 export async function getAdminProducts(query: AdminProductsQuery) {
+  await requireRuntimeAccess();
   const page = Math.max(1, query.page ?? 1);
   const limit = query.limit ?? DEFAULT_ADMIN_PAGE_SIZE;
   const where: Prisma.ProductWhereInput = {};
@@ -127,6 +129,7 @@ export async function getAdminProducts(query: AdminProductsQuery) {
 }
 
 export async function getAdminProductById(id: string) {
+  await requireRuntimeAccess();
   return prisma.product.findUnique({
     where: { id },
     include: {
@@ -145,6 +148,7 @@ export async function getAdminProductById(id: string) {
 }
 
 export async function getAdminCategoriesForSelect() {
+  await requireRuntimeAccess();
   return prisma.category.findMany({
     where: { isActive: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],

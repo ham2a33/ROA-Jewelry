@@ -6,6 +6,7 @@ import {
   REVENUE_STATUSES,
 } from "@/lib/admin/constants";
 import type { OrderStatus } from "@/generated/prisma/client";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 function startOfDay(date: Date): Date {
   const copy = new Date(date);
@@ -84,6 +85,7 @@ export type DashboardData = {
 };
 
 export async function getDashboardData(): Promise<DashboardData> {
+  await requireRuntimeAccess();
   const now = new Date();
   const todayStart = startOfDay(now);
   const weekStart = startOfWeek(now);

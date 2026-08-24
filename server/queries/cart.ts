@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { mapCartProduct } from "@/server/queries/cart-mappers";
 import type { CartProductData } from "@/types/cart";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 export const cartProductSelect = {
   id: true,
@@ -55,6 +56,7 @@ export const cartProductSelect = {
 export async function getCartProducts(
   productIds: string[],
 ): Promise<CartProductData[]> {
+  await requireRuntimeAccess();
   if (productIds.length === 0) {
     return [];
   }

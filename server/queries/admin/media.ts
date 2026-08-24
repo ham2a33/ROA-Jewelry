@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { DEFAULT_ADMIN_PAGE_SIZE } from "@/lib/admin/constants";
 import { getHomepageSectionDisplayName } from "@/lib/homepage/image-slots";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 export type MediaUsage = {
   products: string[];
@@ -21,6 +22,7 @@ export async function getAdminMedia(query?: {
   search?: string;
   kind?: "IMAGE" | "ALL";
 }) {
+  await requireRuntimeAccess();
   const page = Math.max(1, query?.page ?? 1);
   const limit = query?.limit ?? DEFAULT_ADMIN_PAGE_SIZE;
   const where = {
@@ -67,6 +69,7 @@ export async function getAdminMedia(query?: {
 }
 
 export async function getMediaUsage(mediaId: string): Promise<MediaUsage> {
+  await requireRuntimeAccess();
   const [
     productImages,
     categories,

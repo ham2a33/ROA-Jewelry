@@ -1,8 +1,10 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 export async function getAdminHomepageSections() {
+  await requireRuntimeAccess();
   return prisma.homepageSection.findMany({
     orderBy: [{ sortOrder: "asc" }, { key: "asc" }],
     include: {
@@ -21,6 +23,7 @@ export async function getAdminHomepageSections() {
 }
 
 export async function getAdminHomepageSectionByKey(key: string) {
+  await requireRuntimeAccess();
   return prisma.homepageSection.findUnique({
     where: { key },
     include: {
@@ -39,6 +42,7 @@ export async function getAdminHomepageSectionByKey(key: string) {
 }
 
 export async function getAdminUsers() {
+  await requireRuntimeAccess();
   return prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     select: {
@@ -54,6 +58,7 @@ export async function getAdminUsers() {
 }
 
 export async function getAdminUserById(id: string) {
+  await requireRuntimeAccess();
   return prisma.user.findUnique({
     where: { id },
     select: {
@@ -69,6 +74,7 @@ export async function getAdminUserById(id: string) {
 }
 
 export async function getAdminCollectionsSummary() {
+  await requireRuntimeAccess();
   const [featured, bestsellers, newItems, sale] = await Promise.all([
     prisma.product.count({ where: { isFeatured: true, isActive: true } }),
     prisma.product.count({ where: { isBestseller: true, isActive: true } }),

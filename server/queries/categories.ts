@@ -2,6 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { mapHomepageCategory } from "@/server/queries/mappers";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 import type { HomepageCategory } from "@/types/category";
 
 const categorySelect = {
@@ -22,6 +23,7 @@ const categorySelect = {
 } as const;
 
 export async function getHomepageCategories(): Promise<HomepageCategory[]> {
+  await requireRuntimeAccess();
   try {
     const categories = await prisma.category.findMany({
       where: { isActive: true },

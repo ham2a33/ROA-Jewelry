@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { HOMEPAGE_PROMO_BANNER_SLOT } from "@/lib/homepage/image-slots";
 import { mapHeroSection } from "@/server/queries/mappers";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 import type { HeroSectionData } from "@/types/hero";
 
 const promoBannerInclude = {
@@ -16,6 +17,7 @@ const promoBannerWhere = {
 } as const;
 
 export async function ensureHomepagePromoBannerSection() {
+  await requireRuntimeAccess();
   const existing = await prisma.homepageSection.findUnique({
     where: { key: HOMEPAGE_PROMO_BANNER_SLOT.key },
     include: promoBannerInclude,
@@ -77,6 +79,7 @@ async function findActivePromoBannerSection() {
 }
 
 export async function getHomepagePromoBannerSection(): Promise<HeroSectionData | null> {
+  await requireRuntimeAccess();
   try {
     let section = await findActivePromoBannerSection();
 
@@ -96,5 +99,6 @@ export async function getHomepagePromoBannerSection(): Promise<HeroSectionData |
 }
 
 export async function getHomepagePromoBannerSectionForAdmin() {
+  await requireRuntimeAccess();
   return ensureHomepagePromoBannerSection();
 }

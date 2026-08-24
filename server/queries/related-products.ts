@@ -7,6 +7,7 @@ import {
   type ProductCardRecord,
 } from "@/server/queries/product-mappers";
 import type { ProductCardData } from "@/types/product";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 const RELATED_PRODUCTS_LIMIT = 4;
 
@@ -14,6 +15,7 @@ export async function getRelatedProducts(
   productId: string,
   categoryId: string,
 ): Promise<ProductCardData[]> {
+  await requireRuntimeAccess();
   try {
     const products = await prisma.product.findMany({
       where: {

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { toMediaRef } from "@/server/queries/mappers";
 import type { CartItem } from "@/types/cart";
 import type { CheckoutOrderLine, CheckoutPreview } from "@/types/checkout";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 type MediaRecord = {
   id: string;
@@ -153,6 +154,7 @@ function resolveCheckoutLine(
 export async function buildCheckoutPreview(
   cartItems: CartItem[],
 ): Promise<CheckoutPreview> {
+  await requireRuntimeAccess();
   if (cartItems.length === 0) {
     return {
       lines: [],
@@ -193,6 +195,7 @@ export async function buildCheckoutPreview(
 }
 
 export async function generateOrderNumber(): Promise<string> {
+  await requireRuntimeAccess();
   const latestOrder = await prisma.order.findFirst({
     orderBy: { createdAt: "desc" },
     select: { orderNumber: true },

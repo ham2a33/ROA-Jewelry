@@ -47,6 +47,34 @@ services:
       retries: 10
       start_period: 10s
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URL: postgresql://postgres:postgres@postgres:5432/roa_jewelry?schema=public
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production}
+    container_name: roa-jewelry-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/roa_jewelry?schema=public
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production}
+      MEDIA_STORAGE_PROVIDER: ${MEDIA_STORAGE_PROVIDER:-local}
+      MEDIA_UPLOAD_DIR: ${MEDIA_UPLOAD_DIR:-./public/uploads}
+      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-}
+    volumes:
+      - roa_jewelry_uploads:/app/public/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   roa_jewelry_postgres_data:
     name: roa_jewelry_postgres_data
+  roa_jewelry_uploads:
+    name: roa_jewelry_uploads

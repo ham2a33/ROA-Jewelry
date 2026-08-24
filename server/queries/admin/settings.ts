@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { siteConfig } from "@/lib/config/site-config";
 import { parseStoredWhatsAppNumber } from "@/lib/utils/whatsapp";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 
 export type ResolvedSiteSettings = {
   siteName: string;
@@ -21,6 +22,7 @@ export type ResolvedSiteSettings = {
 };
 
 export async function getSiteSettingsRecord() {
+  await requireRuntimeAccess();
   return prisma.siteSettings.findUnique({
     where: { id: "default" },
     include: {
@@ -32,6 +34,7 @@ export async function getSiteSettingsRecord() {
 }
 
 export async function getResolvedSiteSettings(): Promise<ResolvedSiteSettings> {
+  await requireRuntimeAccess();
   const settings = await getSiteSettingsRecord();
 
   return {
@@ -58,6 +61,7 @@ export async function getResolvedSiteSettings(): Promise<ResolvedSiteSettings> {
 }
 
 export async function ensureSiteSettings() {
+  await requireRuntimeAccess();
   return prisma.siteSettings.upsert({
     where: { id: "default" },
     update: {},

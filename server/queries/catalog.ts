@@ -8,6 +8,7 @@ import {
   productCardSelect,
   type ProductCardRecord,
 } from "@/server/queries/product-mappers";
+import { requireRuntimeAccess } from "@/server/queries/runtime-access";
 import type {
   CatalogCategory,
   CatalogResult,
@@ -104,6 +105,7 @@ function buildWhereClause(
 }
 
 export async function getCatalogCategories(): Promise<CatalogCategory[]> {
+  await requireRuntimeAccess();
   try {
     const categories = await prisma.category.findMany({
       where: { isActive: true },
@@ -121,6 +123,7 @@ export async function getCatalogCategories(): Promise<CatalogCategory[]> {
 export async function getCatalogProducts(
   params: CatalogSearchParams,
 ): Promise<CatalogResult> {
+  await requireRuntimeAccess();
   const emptyResult = (page = params.page): CatalogResult => ({
     products: [],
     total: 0,
