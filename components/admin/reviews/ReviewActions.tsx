@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { runClientAction } from "@/lib/admin/client-action";
 import { updateReviewStatus, deleteReview } from "@/server/actions/admin/reviews";
 
 type ReviewActionsProps = {
@@ -16,12 +17,26 @@ export function ReviewActions({
   isPublished,
 }: ReviewActionsProps) {
   const router = useRouter();
+  const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function update(next: { isApproved: boolean; isPublished: boolean }) {
+    setMessage(null);
     startTransition(async () => {
-      await updateReviewStatus({ id, ...next });
-      router.refresh();
+      const actionResult = await runClientAction(() =>
+        updateReviewStatus({ id, ...next }),
+      );
+      if (actionResult.ok && actionResult.value.success) {
+        router.refresh();
+      } else {
+        setMessage(
+          actionResult.ok
+            ? actionResult.value.success
+              ? null
+              : actionResult.value.message
+            : actionResult.message,
+        );
+      }
     });
   }
 
@@ -29,9 +44,20 @@ export function ReviewActions({
     if (!confirm("Удалить отзыв?")) {
       return;
     }
+    setMessage(null);
     startTransition(async () => {
-      await deleteReview(id);
-      router.refresh();
+      const actionResult = await runClientAction(() => deleteReview(id));
+      if (actionResult.ok && actionResult.value.success) {
+        router.refresh();
+      } else {
+        setMessage(
+          actionResult.ok
+            ? actionResult.value.success
+              ? null
+              : actionResult.value.message
+            : actionResult.message,
+        );
+      }
     });
   }
 
@@ -58,6 +84,7 @@ export function ReviewActions({
       <AdminButton size="sm" variant="danger" disabled={isPending} onClick={remove}>
         Delete
       </AdminButton>
+      {message ? <p className="basis-full text-sm text-rose-600">{message}</p> : null}
     </div>
   );
 }

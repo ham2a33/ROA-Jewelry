@@ -1,8 +1,8 @@
-import { uploadAdminMedia } from "@/server/actions/admin/media";
 import {
   MEDIA_UPLOAD_ACCEPT,
   validateImageUploadFile,
 } from "@/lib/media/constants";
+import { formatServerActionClientError } from "@/lib/server-actions/client-error";
 import type { AdminMediaItem } from "@/types/admin-media";
 
 export { MEDIA_UPLOAD_ACCEPT };
@@ -10,6 +10,12 @@ export { MEDIA_UPLOAD_ACCEPT };
 export type UploadAdminMediaFileResult =
   | { success: true; item: AdminMediaItem }
   | { success: false; message: string };
+
+const ADMIN_MEDIA_UPLOAD_PATH = "/api/admin/media/upload";
+
+type UploadApiResponse =
+  | { success: true; id: string; url: string }
+  | { success: false; message?: string };
 
 export async function uploadAdminMediaFile(
   file: File,
@@ -23,32 +29,57 @@ export async function uploadAdminMediaFile(
   formData.set("file", file);
   formData.set("folder", "admin");
 
-  const result = await uploadAdminMedia(formData);
-  if (!result.success) {
-    return {
-      success: false,
-      message: result.message ?? "Не удалось загрузить изображение.",
-    };
-  }
-  if (!result.id || !result.url) {
-    return {
-      success: false,
-      message: "Не удалось загрузить изображение.",
-    };
-  }
+  try {
+    const response = await fetch(ADMIN_MEDIA_UPLOAD_PATH, {
+      method: "POST",
+      body: formData,
+      credentials: "same-origin",
+    });
 
-  return {
-    success: true,
-    item: {
-      id: result.id,
-      url: result.url,
-      filename: file.name,
-      originalName: file.name,
-      mimeType: file.type,
-      size: file.size,
-      alt: null,
-    },
-  };
+    let payload: UploadApiResponse | null = null;
+    try {
+      payload = (await response.json()) as UploadApiResponse;
+    } catch {
+      payload = null;
+    }
+
+    if (!response.ok || !payload?.success) {
+      const message =
+        payload && !payload.success && payload.message
+          ? payload.message
+          : formatServerActionClientError(
+              new Error(
+                `Upload failed with status ${response.status}: ${response.statusText}`,
+              ),
+            );
+      return { success: false, message };
+    }
+
+    if (!payload.id || !payload.url) {
+      return {
+        success: false,
+        message: "Не удалось загрузить изображение.",
+      };
+    }
+
+    return {
+      success: true,
+      item: {
+        id: payload.id,
+        url: payload.url,
+        filename: file.name,
+        originalName: file.name,
+        mimeType: file.type,
+        size: file.size,
+        alt: null,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatServerActionClientError(error),
+    };
+  }
 }
 
 export function toAdminMediaItemFromUpload(

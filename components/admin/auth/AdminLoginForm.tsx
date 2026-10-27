@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { siteConfig } from "@/lib/config/site-config";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { runClientAction } from "@/lib/admin/client-action";
 import {
   bootstrapFirstAdmin,
   loginAdmin,
@@ -43,9 +44,14 @@ export function AdminLoginForm({ showBootstrap }: AdminLoginFormProps) {
         ...(showBootstrap ? { name: name.trim() } : {}),
       };
 
-      const result = showBootstrap
-        ? await bootstrapFirstAdmin(payload)
-        : await loginAdmin(payload);
+      const actionResult = await runClientAction(() =>
+        showBootstrap ? bootstrapFirstAdmin(payload) : loginAdmin(payload),
+      );
+      if (!actionResult.ok) {
+        setError(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
 
       if (!result.success) {
         setError(result.message);

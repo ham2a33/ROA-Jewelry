@@ -6,6 +6,7 @@ import { siteConfig } from "@/lib/config/site-config";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { AdminCard } from "@/components/admin/ui/AdminPageHeader";
 import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
+import { runClientAction } from "@/lib/admin/client-action";
 import {
   createCategory,
   deleteCategory,
@@ -59,17 +60,24 @@ export function CategoryForm({
     }
 
     startTransition(async () => {
-      const result = await updateCategory({
-        id: values.id,
-        name: values.name,
-        slug: values.slug,
-        description: values.description || undefined,
-        imageId: nextImage?.id ?? null,
-        sortOrder: values.sortOrder,
-        isActive: values.isActive,
-        seoTitle: values.seoTitle || undefined,
-        seoDescription: values.seoDescription || undefined,
-      });
+      const actionResult = await runClientAction(() =>
+        updateCategory({
+          id: values.id,
+          name: values.name,
+          slug: values.slug,
+          description: values.description || undefined,
+          imageId: nextImage?.id ?? null,
+          sortOrder: values.sortOrder,
+          isActive: values.isActive,
+          seoTitle: values.seoTitle || undefined,
+          seoDescription: values.seoDescription || undefined,
+        }),
+      );
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       setMessage(
         result.success ? "Изображение категории сохранено" : result.message,
       );
@@ -89,10 +97,16 @@ export function CategoryForm({
         seoTitle: values.seoTitle || undefined,
         seoDescription: values.seoDescription || undefined,
       };
-      const result =
+      const actionResult = await runClientAction(() =>
         mode === "create"
-          ? await createCategory(payload)
-          : await updateCategory({ ...payload, id: values.id });
+          ? createCategory(payload)
+          : updateCategory({ ...payload, id: values.id }),
+      );
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       if (!result.success) {
         setMessage(result.message);
         return;
@@ -111,7 +125,14 @@ export function CategoryForm({
       return;
     }
     startTransition(async () => {
-      const result = await deleteCategory(values.id!);
+      const actionResult = await runClientAction(() =>
+        deleteCategory(values.id!),
+      );
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       setMessage(result.success ? "Категория удалена" : result.message);
       if (result.success) {
         router.push(siteConfig.routes.admin.categories);

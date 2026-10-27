@@ -16,9 +16,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS=--max-old-space-size=2048
 ARG NEXT_PUBLIC_SITE_URL=https://roa-jewerly.com
-ARG AUTH_SECRET=build-time-placeholder-minimum-32-characters-long
+ARG NEXT_DEPLOYMENT_ID=
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
-ENV AUTH_SECRET=$AUTH_SECRET
+ENV NEXT_DEPLOYMENT_ID=$NEXT_DEPLOYMENT_ID
 
 # Prisma client is generated during `npm ci` in deps, but `/generated` is gitignored
 # and not in the Docker build context — regenerate before webpack build.

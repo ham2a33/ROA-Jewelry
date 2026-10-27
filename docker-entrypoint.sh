@@ -1,6 +1,15 @@
 #!/bin/sh
 set -e
 
+: "${DATABASE_URL:?DATABASE_URL is required}"
+: "${AUTH_SECRET:?AUTH_SECRET is required}"
+: "${NEXT_DEPLOYMENT_ID:?NEXT_DEPLOYMENT_ID is required}"
+
+if [ "${#AUTH_SECRET}" -lt 32 ]; then
+  echo "AUTH_SECRET must contain at least 32 characters."
+  exit 1
+fi
+
 wait_for_postgres() {
   echo "Waiting for PostgreSQL..."
   attempt=1

@@ -5,9 +5,8 @@ import { useState, useTransition } from "react";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { AdminCard, AdminEmptyState } from "@/components/admin/ui/AdminPageHeader";
-import {
-  deleteAdminMedia,
-} from "@/server/actions/admin/media";
+import { runClientAction } from "@/lib/admin/client-action";
+import { deleteAdminMedia } from "@/server/actions/admin/media";
 import {
   MEDIA_UPLOAD_ACCEPT,
   uploadAdminMediaFile,
@@ -63,7 +62,12 @@ export function MediaLibrary({ items }: MediaLibraryProps) {
     }
 
     startTransition(async () => {
-      const result = await deleteAdminMedia(mediaId);
+      const actionResult = await runClientAction(() => deleteAdminMedia(mediaId));
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       setMessage(result.success ? "Файл удалён" : result.message);
       router.refresh();
     });

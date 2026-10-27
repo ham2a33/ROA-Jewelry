@@ -9,6 +9,7 @@ import {
 } from "@/lib/admin/constants";
 import { AdminStatusBadge } from "@/components/admin/ui/AdminStatusBadge";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { runClientAction } from "@/lib/admin/client-action";
 import { updateOrderStatus } from "@/server/actions/admin/orders";
 import type { OrderStatus } from "@/generated/prisma/client";
 
@@ -28,7 +29,15 @@ export function OrderStatusSelect({ orderId, status }: OrderStatusSelectProps) {
     setMessage(null);
 
     startTransition(async () => {
-      const result = await updateOrderStatus({ orderId, status: nextStatus });
+      const actionResult = await runClientAction(() =>
+        updateOrderStatus({ orderId, status: nextStatus }),
+      );
+      if (!actionResult.ok) {
+        setValue(status);
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       if (!result.success) {
         setValue(status);
         setMessage(result.message);

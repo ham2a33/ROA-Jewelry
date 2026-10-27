@@ -7,6 +7,7 @@ import { HOMEPAGE_PROMO_BANNER_SLOT } from "@/lib/homepage/image-slots";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { AdminCard } from "@/components/admin/ui/AdminPageHeader";
 import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
+import { runClientAction } from "@/lib/admin/client-action";
 import { updateHomepageSection } from "@/server/actions/admin/homepage";
 import type { AdminMediaPickerValue } from "@/types/admin-media";
 
@@ -41,20 +42,27 @@ export function HomepageEditor({ sections }: HomepageEditorProps) {
 
   function saveSection(section: HomepageSectionItem) {
     startTransition(async () => {
-      const result = await updateHomepageSection({
-        id: section.id,
-        type: section.type,
-        key: section.key,
-        title: section.title ?? undefined,
-        subtitle: section.subtitle ?? undefined,
-        description: section.description ?? undefined,
-        buttonText: section.buttonText ?? undefined,
-        buttonUrl: section.buttonUrl ?? undefined,
-        imageId: section.image?.id ?? null,
-        mobileImageId: section.mobileImage?.id ?? null,
-        isActive: section.isActive,
-        sortOrder: section.sortOrder,
-      });
+      const actionResult = await runClientAction(() =>
+        updateHomepageSection({
+          id: section.id,
+          type: section.type,
+          key: section.key,
+          title: section.title ?? undefined,
+          subtitle: section.subtitle ?? undefined,
+          description: section.description ?? undefined,
+          buttonText: section.buttonText ?? undefined,
+          buttonUrl: section.buttonUrl ?? undefined,
+          imageId: section.image?.id ?? null,
+          mobileImageId: section.mobileImage?.id ?? null,
+          isActive: section.isActive,
+          sortOrder: section.sortOrder,
+        }),
+      );
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       setMessage(result.success ? "Секция сохранена" : result.message);
       router.refresh();
     });

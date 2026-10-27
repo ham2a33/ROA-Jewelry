@@ -67,14 +67,21 @@ roa-jewerly.com → Traefik → roa-app:3000 → roa-postgres:5432
 
 Required runtime env in Dokploy:
 
-- `DATABASE_URL=postgresql://postgres:postgres@roa-postgres:5432/roa_jewelry?schema=public`
+- `DATABASE_URL=<production PostgreSQL URL using hostname roa-postgres>`
 - `NEXT_PUBLIC_SITE_URL=https://roa-jewerly.com`
 - `AUTH_SECRET=<min 32 chars>`
+- `NEXT_DEPLOYMENT_ID=<stable id for the active release>`
 
 Build args:
 
 - `NEXT_PUBLIC_SITE_URL=https://roa-jewerly.com`
-- `AUTH_SECRET=<build placeholder, min 32 chars>`
+- `NEXT_DEPLOYMENT_ID=<the same value as runtime>`
+
+Set the same non-empty `NEXT_DEPLOYMENT_ID` for the image build and running container. Change it for every release; Next.js then adds the deployment identifier to client navigation/action requests and prevents old cached client assets from being mixed with the new server.
+
+After each production deploy, admins should refresh open browser tabs once. If a stale tab still submits an old action, the UI shows a refresh message and no database mutation is performed.
+
+Media uploads use `POST /api/admin/media/upload` (not Server Actions) so large images work even when an older build still has the default 1 MB Server Action limit.
 
 ## Scripts
 

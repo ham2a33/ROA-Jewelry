@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { MediaGalleryPicker } from "@/components/admin/media/MediaGalleryPicker";
+import { runClientAction } from "@/lib/admin/client-action";
 import { syncReviewImages } from "@/server/actions/admin/reviews";
 import type { ProductGalleryImage } from "@/types/admin-media";
 
@@ -23,13 +24,21 @@ export function ReviewImagesSection({
   async function handleSave() {
     return new Promise<void>((resolve) => {
       startTransition(async () => {
-        const result = await syncReviewImages({
-          reviewId,
-          images: images.map((image, index) => ({
-            mediaId: image.mediaId,
-            sortOrder: index,
-          })),
-        });
+        const actionResult = await runClientAction(() =>
+          syncReviewImages({
+            reviewId,
+            images: images.map((image, index) => ({
+              mediaId: image.mediaId,
+              sortOrder: index,
+            })),
+          }),
+        );
+        if (!actionResult.ok) {
+          setMessage(actionResult.message);
+          resolve();
+          return;
+        }
+        const result = actionResult.value;
 
         setMessage(result.success ? "Фото отзыва сохранены" : result.message);
         if (result.success) {

@@ -21,13 +21,17 @@ services:
     networks:
       - roa-internal
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: roa_jewelry
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-roa_jewelry}
     volumes:
       - roa_jewelry_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d roa_jewelry"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:?POSTGRES_USER must be set} -d ${POSTGRES_DB:-roa_jewelry}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -39,7 +43,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://roa-jewerly.com}
-        AUTH_SECRET: ${AUTH_SECRET:-build-time-placeholder-minimum-32-characters-long}
+        NEXT_DEPLOYMENT_ID: ${NEXT_DEPLOYMENT_ID:?NEXT_DEPLOYMENT_ID must be set}
     restart: unless-stopped
     expose:
       - "3000"
@@ -62,9 +66,10 @@ services:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: 3000
-      DATABASE_URL: postgresql://postgres:postgres@roa-postgres:5432/roa_jewelry?schema=public
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://roa-jewerly.com}
-      AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production-use-32-chars-min}
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set}
+      NEXT_DEPLOYMENT_ID: ${NEXT_DEPLOYMENT_ID:?NEXT_DEPLOYMENT_ID must be set}
       MEDIA_STORAGE_PROVIDER: ${MEDIA_STORAGE_PROVIDER:-local}
       MEDIA_UPLOAD_DIR: ${MEDIA_UPLOAD_DIR:-./public/uploads}
       MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-}

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { AdminCard } from "@/components/admin/ui/AdminPageHeader";
+import { runClientAction } from "@/lib/admin/client-action";
 import { updateProfile } from "@/server/actions/admin/auth";
 
 type ProfileFormProps = {
@@ -26,7 +27,12 @@ export function ProfileForm({ initial }: ProfileFormProps) {
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     startTransition(async () => {
-      const result = await updateProfile(values);
+      const actionResult = await runClientAction(() => updateProfile(values));
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       setMessage(result.success ? "Профиль сохранён" : result.message);
       router.refresh();
     });

@@ -5,6 +5,7 @@ import { getMediaStorage } from "@/lib/media/storage";
 import type { MediaRecord, UploadObjectInput } from "@/lib/media/types";
 import { siteConfig } from "@/lib/config/site-config";
 import { MAX_IMAGE_SIZE_ERROR } from "@/lib/media/constants";
+import { validateImageBuffer } from "@/lib/media/image-validation";
 
 export type CreateMediaInput = UploadObjectInput & {
   alt?: string;
@@ -30,6 +31,11 @@ export async function createMediaRecord(
   }
 
   assertAllowedImage(input.mimeType);
+
+  const validationError = validateImageBuffer(input.buffer, input.mimeType);
+  if (validationError) {
+    throw new Error(validationError);
+  }
 
   const stored = await getMediaStorage().upload(input);
 

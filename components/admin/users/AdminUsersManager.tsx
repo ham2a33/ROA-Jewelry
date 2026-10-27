@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { AdminCard } from "@/components/admin/ui/AdminPageHeader";
+import { runClientAction } from "@/lib/admin/client-action";
 import {
   createAdminUser,
   updateAdminUser,
@@ -38,7 +39,12 @@ export function AdminUsersManager({
 
   function createUser() {
     startTransition(async () => {
-      const result = await createAdminUser(draft);
+      const actionResult = await runClientAction(() => createAdminUser(draft));
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       setMessage(result.success ? "Пользователь создан" : result.message);
       router.refresh();
     });
@@ -46,7 +52,12 @@ export function AdminUsersManager({
 
   function saveUser(user: AdminUserRow) {
     startTransition(async () => {
-      const result = await updateAdminUser(user);
+      const actionResult = await runClientAction(() => updateAdminUser(user));
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       setMessage(result.success ? "Пользователь обновлён" : result.message);
       router.refresh();
     });

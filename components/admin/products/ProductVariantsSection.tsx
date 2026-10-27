@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { AdminCard } from "@/components/admin/ui/AdminPageHeader";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
+import { runClientAction } from "@/lib/admin/client-action";
 import {
   deleteProductVariant,
   upsertProductVariant,
@@ -45,12 +46,19 @@ export function ProductVariantsSection({
 
   function saveVariant(variant: VariantRow) {
     startTransition(async () => {
-      const result = await upsertProductVariant({
-        ...variant,
-        productId,
-        price: variant.price || null,
-        imageId: variant.image?.id ?? null,
-      });
+      const actionResult = await runClientAction(() =>
+        upsertProductVariant({
+          ...variant,
+          productId,
+          price: variant.price || null,
+          imageId: variant.image?.id ?? null,
+        }),
+      );
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       if (!result.success) {
         setMessage(result.message);
         return;
@@ -75,12 +83,19 @@ export function ProductVariantsSection({
     }
 
     startTransition(async () => {
-      const result = await upsertProductVariant({
-        ...variant,
-        productId,
-        price: variant.price || null,
-        imageId: image?.id ?? null,
-      });
+      const actionResult = await runClientAction(() =>
+        upsertProductVariant({
+          ...variant,
+          productId,
+          price: variant.price || null,
+          imageId: image?.id ?? null,
+        }),
+      );
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       setMessage(
         result.success ? "Фото варианта сохранено" : result.message,
       );
@@ -95,7 +110,17 @@ export function ProductVariantsSection({
       return;
     }
     startTransition(async () => {
-      await deleteProductVariant(variantId);
+      const actionResult = await runClientAction(() =>
+        deleteProductVariant(variantId),
+      );
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      if (!actionResult.value.success) {
+        setMessage(actionResult.value.message);
+        return;
+      }
       setVariants((current) => current.filter((item) => item.id !== variantId));
       router.refresh();
     });

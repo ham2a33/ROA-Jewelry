@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { MediaGalleryPicker } from "@/components/admin/media/MediaGalleryPicker";
+import { runClientAction } from "@/lib/admin/client-action";
 import { syncProductImages } from "@/server/actions/admin/products";
 import type { ProductGalleryImage } from "@/types/admin-media";
 
@@ -23,15 +24,23 @@ export function ProductImagesSection({
   async function handleSave() {
     return new Promise<void>((resolve) => {
       startTransition(async () => {
-        const result = await syncProductImages({
-          productId,
-          images: images.map((image, index) => ({
-            mediaId: image.mediaId,
-            alt: image.alt,
-            isPrimary: image.isPrimary,
-            sortOrder: index,
-          })),
-        });
+        const actionResult = await runClientAction(() =>
+          syncProductImages({
+            productId,
+            images: images.map((image, index) => ({
+              mediaId: image.mediaId,
+              alt: image.alt,
+              isPrimary: image.isPrimary,
+              sortOrder: index,
+            })),
+          }),
+        );
+        if (!actionResult.ok) {
+          setMessage(actionResult.message);
+          resolve();
+          return;
+        }
+        const result = actionResult.value;
 
         setMessage(
           result.success ? "Фотографии сохранены" : result.message,

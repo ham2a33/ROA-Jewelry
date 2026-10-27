@@ -5,6 +5,7 @@ import { Search, Upload, X } from "lucide-react";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { formatBytes } from "@/components/admin/media/format-bytes";
+import { runClientAction } from "@/lib/admin/client-action";
 import { fetchMediaPickerItems } from "@/server/actions/admin/media-picker";
 import {
   MEDIA_UPLOAD_ACCEPT,
@@ -44,10 +45,17 @@ function MediaPickerDialogContent({
 
   function loadItems(query: string, nextPage: number) {
     startTransition(async () => {
-      const result = await fetchMediaPickerItems({
-        search: query.trim() || undefined,
-        page: nextPage,
-      });
+      const actionResult = await runClientAction(() =>
+        fetchMediaPickerItems({
+          search: query.trim() || undefined,
+          page: nextPage,
+        }),
+      );
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       setItems(result.items);
       setPage(result.page);
       setTotalPages(result.totalPages);

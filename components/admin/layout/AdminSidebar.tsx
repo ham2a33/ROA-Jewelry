@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ExternalLink,
   FolderTree,
@@ -17,7 +17,8 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { runClientAction } from "@/lib/admin/client-action";
 import { siteConfig } from "@/lib/config/site-config";
 import { cn } from "@/lib/utils/cn";
 import type { Permission } from "@/lib/auth/permissions";
@@ -152,7 +153,19 @@ type AdminSidebarProps = {
 
 export function AdminSidebar({ role, userName }: AdminSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [isLoggingOut, startLogout] = useTransition();
+
+  function handleLogout() {
+    startLogout(async () => {
+      const actionResult = await runClientAction(() => logoutAdmin());
+      if (actionResult.ok) {
+        router.push(siteConfig.routes.admin.login);
+        router.refresh();
+      }
+    });
+  }
 
   const visibleSections = navSections
     .map((section) => ({
@@ -214,15 +227,15 @@ export function AdminSidebar({ role, userName }: AdminSidebarProps) {
           <ExternalLink className="h-4 w-4" />
           View Store
         </Link>
-        <form action={logoutAdmin}>
-          <button
-            type="submit"
-            className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
-        </form>
+        <button
+          type="button"
+          disabled={isLoggingOut}
+          onClick={handleLogout}
+          className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm text-neutral-700 hover:bg-neutral-100 disabled:opacity-50"
+        >
+          <LogOut className="h-4 w-4" />
+          {isLoggingOut ? "Выход..." : "Logout"}
+        </button>
       </div>
     </div>
   );

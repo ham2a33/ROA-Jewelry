@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { siteConfig } from "@/lib/config/site-config";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { AdminCard } from "@/components/admin/ui/AdminPageHeader";
+import { runClientAction } from "@/lib/admin/client-action";
 import {
   createProduct,
   updateProduct,
@@ -102,11 +103,18 @@ export function ProductForm({
         seoDescription: values.seoDescription || undefined,
       };
 
-      const result =
+      const actionResult = await runClientAction(() =>
         mode === "create"
-          ? await createProduct(payload)
-          : await updateProduct({ ...payload, id: values.id });
+          ? createProduct(payload)
+          : updateProduct({ ...payload, id: values.id }),
+      );
 
+      if (!actionResult.ok) {
+        setError(actionResult.message);
+        return;
+      }
+
+      const result = actionResult.value;
       if (!result.success) {
         setError(result.message);
         return;
@@ -127,7 +135,14 @@ export function ProductForm({
     }
 
     startTransition(async () => {
-      const result = await deactivateProduct(values.id!);
+      const actionResult = await runClientAction(() =>
+        deactivateProduct(values.id!),
+      );
+      if (!actionResult.ok) {
+        setError(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       if (!result.success) {
         setError(result.message);
         return;
@@ -143,7 +158,12 @@ export function ProductForm({
     }
 
     startTransition(async () => {
-      const result = await deleteProduct(values.id!);
+      const actionResult = await runClientAction(() => deleteProduct(values.id!));
+      if (!actionResult.ok) {
+        setError(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       if (!result.success) {
         setError(result.message);
         return;

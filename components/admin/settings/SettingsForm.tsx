@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { AdminCard } from "@/components/admin/ui/AdminPageHeader";
 import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
+import { runClientAction } from "@/lib/admin/client-action";
 import { updateSiteSettings } from "@/server/actions/admin/settings";
 import type { AdminMediaPickerValue } from "@/types/admin-media";
 
@@ -112,7 +113,14 @@ export function SettingsForm({
     }
 
     startTransition(async () => {
-      const result = await updateSiteSettings(buildPayload(nextMedia));
+      const actionResult = await runClientAction(() =>
+        updateSiteSettings(buildPayload(nextMedia)),
+      );
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       setMessage(result.success ? "Изображение сохранено" : result.message);
       if (result.success) {
         router.refresh();
@@ -123,7 +131,14 @@ export function SettingsForm({
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     startTransition(async () => {
-      const result = await updateSiteSettings(buildPayload());
+      const actionResult = await runClientAction(() =>
+        updateSiteSettings(buildPayload()),
+      );
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
       setMessage(result.success ? "Настройки сохранены" : result.message);
       router.refresh();
     });

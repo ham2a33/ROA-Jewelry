@@ -7,6 +7,7 @@ import { HOMEPAGE_PROMO_BANNER_SLOT } from "@/lib/homepage/image-slots";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { AdminCard } from "@/components/admin/ui/AdminPageHeader";
 import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
+import { runClientAction } from "@/lib/admin/client-action";
 import { updateHomepagePromoBannerImages } from "@/server/actions/admin/homepage-promo-banner";
 import type { AdminMediaPickerValue } from "@/types/admin-media";
 
@@ -29,11 +30,18 @@ export function HomepagePromoBannerEditor({
 
   function persist(nextImage: AdminMediaPickerValue, nextMobileImage: AdminMediaPickerValue) {
     startTransition(async () => {
-      const result = await updateHomepagePromoBannerImages({
-        sectionId,
-        imageId: nextImage?.id ?? null,
-        mobileImageId: nextMobileImage?.id ?? null,
-      });
+      const actionResult = await runClientAction(() =>
+        updateHomepagePromoBannerImages({
+          sectionId,
+          imageId: nextImage?.id ?? null,
+          mobileImageId: nextMobileImage?.id ?? null,
+        }),
+      );
+      if (!actionResult.ok) {
+        setMessage(actionResult.message);
+        return;
+      }
+      const result = actionResult.value;
 
       setMessage(result.success ? "Баннер сохранён" : result.message);
       if (result.success) {
