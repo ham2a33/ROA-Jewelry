@@ -34,6 +34,14 @@ client
   exit 1
 }
 
+# A named volume mounted at /app/public/uploads hides the directory baked into
+# the image. Seed missing files from the image without replacing any files that
+# already live in the persistent volume.
+mkdir -p /app/public/uploads
+if [ -d /app/uploads-seed ]; then
+  cp -an /app/uploads-seed/. /app/public/uploads/
+fi
+
 run_migrations() {
   echo "Running database migrations..."
   attempt=1
