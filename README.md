@@ -83,6 +83,24 @@ After each production deploy, admins should refresh open browser tabs once. If a
 
 Media uploads use `POST /api/admin/media/upload` (not Server Actions) so large images work even when an older build still has the default 1 MB Server Action limit.
 
+### Fresh production stack (parallel v2 deployment)
+
+Use `docker-compose.clean.yml` as a **separate Dokploy Compose application** to start a new empty database and uploads volume without mounting or deleting the legacy volumes. It uses the distinct external resources `roa_jewelry_postgres_data_v2`, `roa_jewelry_uploads_v2`, and `roa-jewelry-internal-v2`. Create those resources only after confirming the v2 names do not already exist. Keep the old PostgreSQL service running until the new app is verified.
+
+Configure these environment variables in the new Dokploy application:
+
+- `POSTGRES_USER`: generate a unique, URL-safe initialization superuser (for example, a `roa_init_` prefix followed by random lowercase hex). The application does not use this role.
+- `POSTGRES_PASSWORD`: generate at least 32 random bytes as lowercase hex for the initialization superuser. This is not the app's login password.
+- `APP_DB_USER` and `APP_DB_PASSWORD`: generate a separate application login role and 32-byte hex password. The init SQL creates this role without superuser privileges, grants database connectivity and schema ownership, and Compose uses it in `DATABASE_URL`.
+- `POSTGRES_DB=roa_jewelry`
+- `AUTH_SECRET`: generate at least 32 random bytes as hex.
+- `NEXT_DEPLOYMENT_ID`: a unique release identifier; use the same value at build and runtime.
+- `NEXT_PUBLIC_SITE_URL=https://roa-jewerly.com`
+
+Do not reuse the old production credentials. The clean Compose file derives `DATABASE_URL` from the new application-role variables and internal hostname `roa-postgres`. It has no manual Traefik labels: configure both domains in the new app's Dokploy **Domains** tab (path `/`, container port `3000`, HTTPS enabled, HTTP redirected to HTTPS). Remove the old app's domains and stop only its app container at cutover; leave its PostgreSQL container and both legacy volumes untouched until verification is complete.
+
+The app runs `prisma migrate deploy` at startup. Do not run `npm run db:seed` automatically in production: it creates sample catalog and homepage content, but no admin user or product images. On an empty database, create the first administrator through the one-time bootstrap form at `/admin/login`, then add real catalog content and upload authorized product photography through Admin Media. The catalog is expected to be empty until real products are added.
+
 ## Scripts
 
 - `npm run dev` — development server
