@@ -1,0 +1,86 @@
+# Fresh ROA production stack. Deploy as a separate Dokploy Compose application
+# while the existing stack remains available for rollback. Configure domains
+# only in this new application's Dokploy Domains tab; do not add Traefik labels
+# here. After verification, remove/disable the old app's domains before enabling
+# these domains on the new app.
+services:
+  roa-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    networks:
+      - roa-internal-v2
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-roa_jewelry}
+      APP_DB_USER: ${APP_DB_USER:?APP_DB_USER must be set}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD must be set}
+    volumes:
+      - roa_jewelry_postgres_data_v2:/var/lib/postgresql/data
+      - ./docker/postgres/init/10-app-role.sql:/docker-entrypoint-initdb.d/10-app-role.sql:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:?POSTGRES_USER must be set} -d ${POSTGRES_DB:-roa_jewelry}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  roa-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?NEXT_PUBLIC_SITE_URL must be set}
+        NEXT_DEPLOYMENT_ID: ${NEXT_DEPLOYMENT_ID:?NEXT_DEPLOYMENT_ID must be set}
+    restart: on-failure:5
+    expose:
+      - "3000"
+    networks:
+      - roa-internal-v2
+      - dokploy-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 180s
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: postgresql://${APP_DB_USER:?APP_DB_USER must be set}:${APP_DB_PASSWORD:?APP_DB_PASSWORD must be set}@roa-postgres:5432/${POSTGRES_DB:-roa_jewelry}?schema=public
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?NEXT_PUBLIC_SITE_URL must be set}
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set}
+      NEXT_DEPLOYMENT_ID: ${NEXT_DEPLOYMENT_ID:?NEXT_DEPLOYMENT_ID must be set}
+      MEDIA_STORAGE_PROVIDER: local
+      MEDIA_UPLOAD_DIR: ./public/uploads
+    volumes:
+      - roa_jewelry_uploads_v2:/app/public/uploads
+    depends_on:
+      roa-postgres:
+        condition: service_healthy
+
+networks:
+  roa-internal-v2:
+    name: roa-jewelry-internal-v2
+    external: true
+  dokploy-network:
+    external: true
+
+volumes:
+  roa_jewelry_postgres_data_v2:
+    name: roa_jewelry_postgres_data_v2
+    external: true
+  roa_jewelry_uploads_v2:
+    name: roa_jewelry_uploads_v2
+    external: true

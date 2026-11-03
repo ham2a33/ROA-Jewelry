@@ -13,6 +13,20 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: roa_init_ci
+          POSTGRES_PASSWORD: ci-only-bootstrap-password
+          POSTGRES_DB: roa_jewelry
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U roa_init_ci -d roa_jewelry"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,9 +35,51 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run db:generate
+      - name: Initialize least-privilege application role
+        run: psql -h 127.0.0.1 -p 5432 -U roa_init_ci -d roa_jewelry -v ON_ERROR_STOP=1 -f docker/postgres/init/10-app-role.sql
+        env:
+          PGPASSWORD: ci-only-bootstrap-password
+          POSTGRES_DB: roa_jewelry
+          APP_DB_USER: roa_app_ci
+          APP_DB_PASSWORD: ci-only-app-password
+      - name: Verify application role privileges
+        run: |
+          result="$(psql -h 127.0.0.1 -p 5432 -U roa_init_ci -d roa_jewelry -Atc "SELECT rolcanlogin AND NOT rolsuper AND has_database_privilege(rolname, 'roa_jewelry', 'CONNECT') AND has_schema_privilege(rolname, 'public', 'CREATE') FROM pg_roles WHERE rolname = 'roa_app_ci'")"
+          test "$result" = "t"
+        env:
+          PGPASSWORD: ci-only-bootstrap-password
+      - name: Apply production migrations on a fresh database
+        run: npm run db:migrate:deploy
+        env:
+          DATABASE_URL: postgresql://roa_app_ci:ci-only-app-password@127.0.0.1:5432/roa_jewelry?schema=public
+      - name: Verify fresh migration status and Prisma query
+        run: |
+          npx prisma migrate status
+          node -e 'const {Client}=require("pg");const c=new Client({connectionString:process.env.DATABASE_URL});c.connect().then(()=>c.query("SELECT 1 AS ok")).then(r=>{if(r.rows[0].ok!==1)process.exitCode=1;else console.log("database_select_1=ok")}).catch(()=>{console.log("database_select_1=failed");process.exitCode=1}).finally(()=>c.end())'
+        env:
+          DATABASE_URL: postgresql://roa_app_ci:ci-only-app-password@127.0.0.1:5432/roa_jewelry?schema=public
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: docker compose -f docker-compose.yml config --quiet
+        env:
+          POSTGRES_USER: roa_ci
+          POSTGRES_PASSWORD: ci-only-credential
+          POSTGRES_DB: roa_jewelry
+          DATABASE_URL: postgresql://roa_ci:ci-only-credential@roa-postgres:5432/roa_jewelry?schema=public
+          NEXT_PUBLIC_SITE_URL: https://roa-jewerly.com
+          NEXT_DEPLOYMENT_ID: github-actions-ci
+          AUTH_SECRET: ci-only-auth-secret-at-least-32-characters
+      - run: docker compose -f docker-compose.clean.yml config --quiet
+        env:
+          POSTGRES_USER: roa_ci
+          POSTGRES_PASSWORD: ci-only-credential
+          POSTGRES_DB: roa_jewelry
+          APP_DB_USER: roa_app_ci
+          APP_DB_PASSWORD: ci-only-app-credential
+          NEXT_PUBLIC_SITE_URL: https://roa-jewerly.com
+          NEXT_DEPLOYMENT_ID: github-actions-ci
+          AUTH_SECRET: ci-only-auth-secret-at-least-32-characters
       - run: npm run build
         env:
           NEXT_PUBLIC_SITE_URL: https://roa-jewerly.com
