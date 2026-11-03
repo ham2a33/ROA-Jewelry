@@ -44,7 +44,8 @@ services:
       args:
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://roa-jewerly.com}
         NEXT_DEPLOYMENT_ID: ${NEXT_DEPLOYMENT_ID:?NEXT_DEPLOYMENT_ID must be set}
-    restart: unless-stopped
+    # Bound process restarts so permanent startup configuration errors are visible.
+    restart: on-failure:5
     expose:
       - "3000"
     networks:
@@ -56,7 +57,7 @@ services:
           "CMD",
           "node",
           "-e",
-          "require('net').createConnection({ port: 3000, host: '127.0.0.1' }).on('connect', () => process.exit(0)).on('error', () => process.exit(1))",
+          "fetch('http://127.0.0.1:3000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
         ]
       interval: 10s
       timeout: 5s

@@ -21,10 +21,33 @@ client
   .connect()
   .then(() => client.end())
   .then(() => process.exit(0))
-  .catch(() => process.exit(1));
+  .catch((error) => {
+    const code = String(error.code || 'unknown');
+    console.error('PostgreSQL connection failed (code ' + code + ').');
+
+    const permanent =
+      code.startsWith('28') ||
+      code === '3D000' ||
+      code === '42501' ||
+      code === 'ERR_INVALID_URL';
+    const transient =
+      code.startsWith('08') ||
+      ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EHOSTUNREACH', 'ENETUNREACH', 'ENOTFOUND', 'EAI_AGAIN', '57P01', '57P03'].includes(code);
+
+    if (permanent || !transient) {
+      process.exit(2);
+    }
+    process.exit(1);
+  });
 "; then
       echo "PostgreSQL is ready."
       return 0
+    else
+      connection_status=$?
+      if [ "$connection_status" -eq 2 ]; then
+        echo "PostgreSQL rejected the connection configuration or returned a non-retryable error. Verify the existing login role, database, and DATABASE_URL; no credentials were printed."
+        exit 78
+      fi
     fi
     echo "PostgreSQL not ready (attempt ${attempt}/30), retrying in 2s..."
     attempt=$((attempt + 1))
