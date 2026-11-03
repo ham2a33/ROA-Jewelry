@@ -101,6 +101,8 @@ Do not reuse the old production credentials. The clean Compose file derives `DAT
 
 The app runs `prisma migrate deploy` at startup. Do not run `npm run db:seed` automatically in production: it creates sample catalog and homepage content, but no admin user or product images. On an empty database, create the first administrator through the one-time bootstrap form at `/admin/login`, then add real catalog content and upload authorized product photography through Admin Media. The catalog is expected to be empty until real products are added.
 
+Runtime local media is served by the public Node.js Route Handler at `/uploads/[...path]`, reading from `MEDIA_UPLOAD_DIR` (production: `/app/public/uploads`). After deploying a build that includes this route, verify an existing upload with `curl -I https://roa-jewerly.com/uploads/admin/<existing-file>.png` and confirm `200` plus `Content-Type: image/png`. Then verify Next Image with `/_next/image?url=%2Fuploads%2Fadmin%2F<existing-file>.png&w=640&q=75`. These reads are public; upload and media-management operations remain permission-protected. Keep the existing uploads volume mounted at `/app/public/uploads` across redeployments.
+
 ## Scripts
 
 - `npm run dev` — development server
